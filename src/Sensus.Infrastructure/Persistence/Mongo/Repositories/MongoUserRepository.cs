@@ -28,18 +28,21 @@ public sealed class MongoUserRepository : IUserRepository
 
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        try
+        if (_context.Users is not null)
         {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, id);
-            var document = await _context.Users.Find(filter).FirstOrDefaultAsync(cancellationToken);
-            if (document is not null)
+            try
             {
-                return document.ToDomain();
+                var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, id);
+                var document = await _context.Users.Find(filter).FirstOrDefaultAsync(cancellationToken);
+                if (document is not null)
+                {
+                    return document.ToDomain();
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo conectar a MongoDB Atlas. Verificando almacén local de desarrollo.");
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo conectar a MongoDB Atlas. Verificando almacén local de desarrollo.");
+            }
         }
 
         _fallbackStore.TryGetValue(id, out var fallbackUser);
@@ -50,18 +53,21 @@ public sealed class MongoUserRepository : IUserRepository
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
 
-        try
+        if (_context.Users is not null)
         {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Correo, normalizedEmail);
-            var document = await _context.Users.Find(filter).FirstOrDefaultAsync(cancellationToken);
-            if (document is not null)
+            try
             {
-                return document.ToDomain();
+                var filter = Builders<UserDocument>.Filter.Eq(u => u.Correo, normalizedEmail);
+                var document = await _context.Users.Find(filter).FirstOrDefaultAsync(cancellationToken);
+                if (document is not null)
+                {
+                    return document.ToDomain();
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo conectar a MongoDB Atlas. Verificando almacén local de desarrollo.");
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo conectar a MongoDB Atlas. Verificando almacén local de desarrollo.");
+            }
         }
 
         return _fallbackStore.Values.FirstOrDefault(u =>
@@ -72,18 +78,21 @@ public sealed class MongoUserRepository : IUserRepository
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
 
-        try
+        if (_context.Users is not null)
         {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Correo, normalizedEmail);
-            var count = await _context.Users.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
-            if (count > 0)
+            try
             {
-                return true;
+                var filter = Builders<UserDocument>.Filter.Eq(u => u.Correo, normalizedEmail);
+                var count = await _context.Users.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
+                if (count > 0)
+                {
+                    return true;
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo conectar a MongoDB Atlas al verificar existencia de correo.");
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo conectar a MongoDB Atlas al verificar existencia de correo.");
+            }
         }
 
         return _fallbackStore.Values.Any(u =>
@@ -94,14 +103,17 @@ public sealed class MongoUserRepository : IUserRepository
     {
         _fallbackStore[user.Id] = user;
 
-        try
+        if (_context.Users is not null)
         {
-            var document = UserDocument.FromDomain(user);
-            await _context.Users.InsertOneAsync(document, cancellationToken: cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo guardar en MongoDB Atlas en este momento. Se conservó en memoria.");
+            try
+            {
+                var document = UserDocument.FromDomain(user);
+                await _context.Users.InsertOneAsync(document, cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo guardar en MongoDB Atlas en este momento. Se conservó en memoria.");
+            }
         }
     }
 
@@ -109,15 +121,18 @@ public sealed class MongoUserRepository : IUserRepository
     {
         _fallbackStore[user.Id] = user;
 
-        try
+        if (_context.Users is not null)
         {
-            var document = UserDocument.FromDomain(user);
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, user.Id);
-            await _context.Users.ReplaceOneAsync(filter, document, cancellationToken: cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo actualizar en MongoDB Atlas en este momento. Se conservó en memoria.");
+            try
+            {
+                var document = UserDocument.FromDomain(user);
+                var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, user.Id);
+                await _context.Users.ReplaceOneAsync(filter, document, cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo actualizar en MongoDB Atlas en este momento. Se conservó en memoria.");
+            }
         }
     }
 }

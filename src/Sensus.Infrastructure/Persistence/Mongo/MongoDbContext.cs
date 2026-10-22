@@ -10,7 +10,7 @@ namespace Sensus.Infrastructure.Persistence.Mongo;
 /// </summary>
 public sealed class MongoDbContext
 {
-    private readonly IMongoDatabase _database;
+    private readonly IMongoDatabase? _database;
     private readonly ILogger<MongoDbContext> _logger;
     private readonly MongoDbSettings _settings;
 
@@ -23,24 +23,24 @@ public sealed class MongoDbContext
 
         if (string.IsNullOrWhiteSpace(_settings.ConnectionString))
         {
-            _logger.LogWarning("MongoDB ConnectionString no está configurada. Operando en modo local/desconectado.");
-            var client = new MongoClient("mongodb://localhost:27017");
-            _database = client.GetDatabase(_settings.DatabaseName);
+            _logger.LogWarning("MongoDB ConnectionString no está configurada. Operando en modo local/desconectado en memoria.");
+            _database = null;
         }
         else
         {
             var client = new MongoClient(_settings.ConnectionString);
             _database = client.GetDatabase(_settings.DatabaseName);
+            ConfigureIndexes();
         }
-
-        ConfigureIndexes();
     }
 
-    public IMongoCollection<UserDocument> Users =>
-        _database.GetCollection<UserDocument>(_settings.UsersCollectionName);
+    public IMongoCollection<UserDocument>? Users =>
+        _database?.GetCollection<UserDocument>(_settings.UsersCollectionName);
 
     private void ConfigureIndexes()
     {
+        if (Users is null) return;
+
         try
         {
             var indexKeysDefinition = Builders<UserDocument>.IndexKeys.Ascending(u => u.Correo);
