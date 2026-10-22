@@ -1,3 +1,12 @@
 <Solution>
-  <Project Path="sensus-back.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Sensus.Api/Sensus.Api.csproj" />
+    <Project Path="src/Sensus.Application/Sensus.Application.csproj" />
+    <Project Path="src/Sensus.Domain/Sensus.Domain.csproj" />
+    <Project Path="src/Sensus.Infrastructure/Sensus.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sensus.Application.UnitTests/Sensus.Application.UnitTests.csproj" />
+    <Project Path="tests/Sensus.ArchitectureTests/Sensus.ArchitectureTests.csproj" />
+  </Folder>
 </Solution>
