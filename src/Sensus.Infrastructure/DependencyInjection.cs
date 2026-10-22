@@ -1,15 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Sensus.Application.Common.Interfaces;
 using Sensus.Domain.Repositories;
 using Sensus.Infrastructure.Authentication;
 using Sensus.Infrastructure.Migration;
-using Sensus.Infrastructure.Persistence;
-using Sensus.Infrastructure.Persistence.Interceptors;
 using Sensus.Infrastructure.Persistence.Mongo;
 using Sensus.Infrastructure.Persistence.Mongo.Repositories;
-using Sensus.Infrastructure.Persistence.Repositories;
 using Sensus.Infrastructure.Services;
 
 namespace Sensus.Infrastructure;
@@ -22,7 +18,6 @@ public static class DependencyInjection
     {
         // Servicios base
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
-        services.AddScoped<AuditableEntityInterceptor>();
 
         // Autenticación, BCrypt y JWT
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
@@ -39,19 +34,6 @@ public static class DependencyInjection
 
         // Servicio de migración de SQL a MongoDB Atlas
         services.AddScoped<SqlToMongoMigrationService>();
-
-        // Configuración de Entity Framework (para entidades relacionales existentes / tests)
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-        services.AddDbContext<ApplicationDbContext>((sp, options) =>
-        {
-            var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
-            options.AddInterceptors(interceptor);
-            options.UseInMemoryDatabase("SensusDb");
-        });
-
-        services.AddScoped<ISensorRepository, SensorRepository>();
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         return services;
     }

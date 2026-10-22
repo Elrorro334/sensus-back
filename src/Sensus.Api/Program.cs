@@ -129,7 +129,6 @@ app.MapHealthChecks("/health");
 
 // Registro de endpoints
 app.MapAuthEndpoints();
-app.MapSensorEndpoints();
 
 app.Run();
 
