@@ -7,19 +7,15 @@ using Sensus.Api.Middlewares;
 using Sensus.Api.Services;
 using Sensus.Application;
 using Sensus.Application.Common.Interfaces;
-using Sensus.Domain.Repositories;
 using Sensus.Infrastructure;
 using Sensus.Infrastructure.Authentication;
-using Sensus.Infrastructure.Migration;
-using Sensus.Infrastructure.Persistence;
-using Sensus.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Capa de Aplicación
 builder.Services.AddApplication();
 
-// 2. Capa de Infraestructura (BCrypt, JWT, MongoDB Atlas, EF Core)
+// 2. Capa de Infraestructura (BCrypt, JWT, MongoDB Atlas)
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // 3. Capa de Presentación / API
@@ -120,17 +116,6 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
     app.MapOpenApi();
-
-    // Sembrado de entidades relacionales de prueba
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await ApplicationDbContextSeed.SeedSampleDataAsync(dbContext);
-
-    // Sembrado del usuario Administrador (si se configuran variables de entorno)
-    var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await AdminUserSeeder.SeedAdminUserAsync(userRepository, passwordHasher, app.Configuration, logger);
 }
 
 app.UseHttpsRedirection();

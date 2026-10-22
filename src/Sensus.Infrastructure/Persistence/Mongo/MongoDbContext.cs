@@ -23,7 +23,7 @@ public sealed class MongoDbContext
 
         if (string.IsNullOrWhiteSpace(_settings.ConnectionString))
         {
-            _logger.LogWarning("MongoDB ConnectionString no está configurada. Operando en modo local/desconectado en memoria.");
+            _logger.LogWarning("MongoDB ConnectionString no está configurada.");
             _database = null;
         }
         else
@@ -34,20 +34,22 @@ public sealed class MongoDbContext
         }
     }
 
-    public IMongoCollection<UserDocument>? Users =>
-        _database?.GetCollection<UserDocument>(_settings.UsersCollectionName);
+    public IMongoCollection<UserDocument> Users =>
+        _database?.GetCollection<UserDocument>(_settings.UsersCollectionName)
+        ?? throw new InvalidOperationException("La conexión a MongoDB Atlas no está configurada. Configure 'MongoDbSettings:ConnectionString'.");
 
     private void ConfigureIndexes()
     {
-        if (Users is null) return;
+        if (_database is null) return;
 
         try
         {
+            var collection = _database.GetCollection<UserDocument>(_settings.UsersCollectionName);
             var indexKeysDefinition = Builders<UserDocument>.IndexKeys.Ascending(u => u.Correo);
             var indexOptions = new CreateIndexOptions { Unique = true };
             var indexModel = new CreateIndexModel<UserDocument>(indexKeysDefinition, indexOptions);
 
-            Users.Indexes.CreateOne(indexModel);
+            collection.Indexes.CreateOne(indexModel);
         }
         catch (Exception ex)
         {
