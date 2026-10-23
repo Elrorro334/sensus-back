@@ -65,14 +65,13 @@ builder.Services.AddSwaggerGen(options =>
         Description = "API backend empresarial de Sensus con Clean Architecture, CQRS, MongoDB Atlas y autenticación JWT."
     });
 
-    // Configuración del candado Authorize para tokens JWT en Swagger UI
     var securityScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Description = "Ingresa tu token JWT en el formato: Bearer {tu_token}",
+        Description = "Ingresa tu token JWT obtenido en /login",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
+        Scheme = "bearer",
         BearerFormat = "JWT"
     };
 
@@ -91,7 +90,7 @@ builder.Services.AddOpenApi();
 // Health Checks
 builder.Services.AddHealthChecks();
 
-// Configuración de CORS
+// Configuración de CORS amplia para desarrollo
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -106,6 +105,7 @@ var app = builder.Build();
 
 // Pipeline HTTP
 app.UseExceptionHandler();
+app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
 {
@@ -117,9 +117,10 @@ if (app.Environment.IsDevelopment())
     });
     app.MapOpenApi();
 }
-
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+else
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
