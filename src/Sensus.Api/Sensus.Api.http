@@ -102,3 +102,41 @@ Accept: application/json
 ### 3.2 Intentar consultar perfil sin token (401 Unauthorized)
 GET {{baseUrl}}/api/v1/auth/me
 Accept: application/json
+
+
+### =========================================================================
+### HISTORIAS SE-003 & SE-004: ACTIVACIÓN DE ROL COMERCIAL Y LOCAL
+### =========================================================================
+
+### 4.1 Registrar comercio y activar rol comercial dinámicamente (SE-003 & SE-004)
+# @name registerComercio
+POST {{baseUrl}}/api/v1/comercios
+Authorization: Bearer {{registerSuccess.response.body.token}}
+Content-Type: application/json
+
+{
+  "nombreComercial": "Mi Tienda Express Sensus",
+  "direccion": "Av. Insurgentes Sur 1602, Crédito Constructor",
+  "codigoPostal": "03940"
+}
+
+### 4.2 Consultar datos del comercio propio del usuario (SE-004)
+GET {{baseUrl}}/api/v1/comercios/me
+Authorization: Bearer {{registerSuccess.response.body.token}}
+Accept: application/json
+
+### 4.3 Intentar registrar segundo comercio con el mismo usuario (Conflicto 409)
+POST {{baseUrl}}/api/v1/comercios
+Authorization: Bearer {{registerSuccess.response.body.token}}
+Content-Type: application/json
+
+{
+  "nombreComercial": "Segunda Tienda No Permitida",
+  "direccion": "Calle Secundaria 456",
+  "codigoPostal": "03940"
+}
+
+### 4.4 Verificar perfil actualizado con rol 'Comerciante' añadido
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{registerComercio.response.body.token}}
+Accept: application/json

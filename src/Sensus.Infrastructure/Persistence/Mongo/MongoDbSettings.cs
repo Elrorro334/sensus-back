@@ -7,4 +7,5 @@ public sealed class MongoDbSettings
     public string ConnectionString { get; set; } = string.Empty;
     public string DatabaseName { get; set; } = "SensusDb";
     public string UsersCollectionName { get; set; } = "usuarios";
+    public string ComerciosCollectionName { get; set; } = "comercios";
 }

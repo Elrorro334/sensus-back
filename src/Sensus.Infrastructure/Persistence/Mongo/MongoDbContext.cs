@@ -10,7 +10,7 @@ namespace Sensus.Infrastructure.Persistence.Mongo;
 /// </summary>
 public sealed class MongoDbContext
 {
-    private readonly IMongoDatabase _database;
+    private readonly IMongoDatabase? _database;
     private readonly ILogger<MongoDbContext> _logger;
     private readonly MongoDbSettings _settings;
 
@@ -23,35 +23,59 @@ public sealed class MongoDbContext
 
         if (string.IsNullOrWhiteSpace(_settings.ConnectionString))
         {
-            _logger.LogWarning("MongoDB ConnectionString no está configurada. Operando en modo local/desconectado.");
-            var client = new MongoClient("mongodb://localhost:27017");
-            _database = client.GetDatabase(_settings.DatabaseName);
+            _logger.LogWarning("MongoDB ConnectionString no está configurada.");
+            _database = null;
         }
         else
         {
             var client = new MongoClient(_settings.ConnectionString);
             _database = client.GetDatabase(_settings.DatabaseName);
+            ConfigureIndexes();
         }
-
-        ConfigureIndexes();
     }
 
     public IMongoCollection<UserDocument> Users =>
-        _database.GetCollection<UserDocument>(_settings.UsersCollectionName);
+        _database?.GetCollection<UserDocument>(_settings.UsersCollectionName)
+        ?? throw new InvalidOperationException("La conexión a MongoDB Atlas no está configurada. Configure 'MongoDbSettings:ConnectionString'.");
+
+    public IMongoCollection<ComercioDocument> Comercios =>
+        _database?.GetCollection<ComercioDocument>(_settings.ComerciosCollectionName)
+        ?? throw new InvalidOperationException("La conexión a MongoDB Atlas no está configurada. Configure 'MongoDbSettings:ConnectionString'.");
 
     private void ConfigureIndexes()
     {
+        if (_database is null) return;
+
         try
         {
+            var usersCollection = _database.GetCollection<UserDocument>(_settings.UsersCollectionName);
             var indexKeysDefinition = Builders<UserDocument>.IndexKeys.Ascending(u => u.Correo);
             var indexOptions = new CreateIndexOptions { Unique = true };
             var indexModel = new CreateIndexModel<UserDocument>(indexKeysDefinition, indexOptions);
 
-            Users.Indexes.CreateOne(indexModel);
+            usersCollection.Indexes.CreateOne(indexModel);
         }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Nota: El índice único de correos ya existe o el clúster aún no está disponible.");
+        }
+
+        try
+        {
+            var comerciosCollection = _database.GetCollection<ComercioDocument>(_settings.ComerciosCollectionName);
+            
+            // Índice único para UsuarioId (un usuario tiene un solo comercio activo)
+            var userIndexKeys = Builders<ComercioDocument>.IndexKeys.Ascending(c => c.UsuarioId);
+            var userIndexOptions = new CreateIndexOptions { Unique = true };
+            comerciosCollection.Indexes.CreateOne(new CreateIndexModel<ComercioDocument>(userIndexKeys, userIndexOptions));
+
+            // Índice geoespacial 2dsphere para consultas geográficas
+            var geoIndexKeys = Builders<ComercioDocument>.IndexKeys.Geo2DSphere(c => c.Ubicacion);
+            comerciosCollection.Indexes.CreateOne(new CreateIndexModel<ComercioDocument>(geoIndexKeys));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Nota: Los índices de comercios ya existen o el clúster aún no está disponible.");
         }
     }
 }

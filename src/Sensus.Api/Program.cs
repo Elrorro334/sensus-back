@@ -1,24 +1,21 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Sensus.Api.Endpoints;
 using Sensus.Api.Middlewares;
 using Sensus.Api.Services;
 using Sensus.Application;
 using Sensus.Application.Common.Interfaces;
-using Sensus.Domain.Repositories;
 using Sensus.Infrastructure;
 using Sensus.Infrastructure.Authentication;
-using Sensus.Infrastructure.Migration;
-using Sensus.Infrastructure.Persistence;
-using Sensus.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Capa de Aplicación
 builder.Services.AddApplication();
 
-// 2. Capa de Infraestructura (BCrypt, JWT, MongoDB Atlas, EF Core)
+// 2. Capa de Infraestructura (BCrypt, JWT, MongoDB Atlas)
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // 3. Capa de Presentación / API
@@ -57,7 +54,34 @@ builder.Services.AddAuthorization();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// Documentación OpenAPI
+// Documentación Swagger y OpenAPI con soporte para JWT Bearer
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Sensus API",
+        Version = "v1",
+        Description = "API backend empresarial de Sensus con Clean Architecture, CQRS, MongoDB Atlas y autenticación JWT."
+    });
+
+    // Configuración del candado Authorize para tokens JWT en Swagger UI
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Ingresa tu token JWT en el formato: Bearer {tu_token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    };
+
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 builder.Services.AddOpenApi();
 
 // Health Checks
@@ -81,21 +105,19 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sensus API v1");
+        c.RoutePrefix = "swagger";
+    });
     app.MapOpenApi();
-
-    // Sembrado de entidades relacionales de prueba
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await ApplicationDbContextSeed.SeedSampleDataAsync(dbContext);
-
-    // Sembrado del usuario Administrador (si se configuran variables de entorno)
-    var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await AdminUserSeeder.SeedAdminUserAsync(userRepository, passwordHasher, app.Configuration, logger);
+}
+else
+{
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
@@ -107,6 +129,7 @@ app.MapHealthChecks("/health");
 // Registro de endpoints
 app.MapAuthEndpoints();
 app.MapSensorEndpoints();
+app.MapComercioEndpoints();
 
 app.Run();
 

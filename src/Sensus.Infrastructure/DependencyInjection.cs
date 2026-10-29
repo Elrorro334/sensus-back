@@ -31,11 +31,15 @@ public static class DependencyInjection
             configuration.GetSection(JwtSettings.SectionName));
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
+        // Geocodificación (SE-003)
+        services.AddScoped<IGeocodingService, NominatimGeocodingService>();
+
         // Configuración de MongoDB Atlas
         services.Configure<MongoDbSettings>(
             configuration.GetSection(MongoDbSettings.SectionName));
         services.AddSingleton<MongoDbContext>();
         services.AddScoped<IUserRepository, MongoUserRepository>();
+        services.AddScoped<IComercioRepository, MongoComercioRepository>();
 
         // Servicio de migración de SQL a MongoDB Atlas
         services.AddScoped<SqlToMongoMigrationService>();
