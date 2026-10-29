@@ -54,40 +54,13 @@ builder.Services.AddAuthorization();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// Documentación Swagger y OpenAPI con soporte para JWT Bearer
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Sensus API",
-        Version = "v1",
-        Description = "API backend empresarial de Sensus con Clean Architecture, CQRS, MongoDB Atlas y autenticación JWT."
-    });
-
-    // Configuración del candado Authorize para tokens JWT en Swagger UI
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Ingresa tu token JWT en el formato: Bearer {tu_token}",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    };
-
-    options.AddSecurityDefinition("Bearer", securityScheme);
-
-    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-    });
-});
+// Documentación OpenAPI
 builder.Services.AddOpenApi();
 
 // Health Checks
 builder.Services.AddHealthChecks();
 
-// Configuración de CORS
+// Configuración de CORS amplia para desarrollo
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -102,6 +75,7 @@ var app = builder.Build();
 
 // Pipeline HTTP
 app.UseExceptionHandler();
+app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
 {
@@ -112,12 +86,20 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
     app.MapOpenApi();
-}
-else
-{
-    app.UseHttpsRedirection();
+
+    // Sembrado de entidades relacionales de prueba
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await ApplicationDbContextSeed.SeedSampleDataAsync(dbContext);
+
+    // Sembrado del usuario Administrador (si se configuran variables de entorno)
+    var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await AdminUserSeeder.SeedAdminUserAsync(userRepository, passwordHasher, app.Configuration, logger);
 }
 
+app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
@@ -129,7 +111,6 @@ app.MapHealthChecks("/health");
 // Registro de endpoints
 app.MapAuthEndpoints();
 app.MapSensorEndpoints();
-app.MapComercioEndpoints();
 
 app.Run();
 

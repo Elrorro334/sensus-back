@@ -30,8 +30,9 @@ public sealed class MongoDbContext
         {
             var client = new MongoClient(_settings.ConnectionString);
             _database = client.GetDatabase(_settings.DatabaseName);
-            ConfigureIndexes();
         }
+
+        ConfigureIndexes();
     }
 
     public IMongoCollection<UserDocument> Users =>
@@ -48,12 +49,11 @@ public sealed class MongoDbContext
 
         try
         {
-            var usersCollection = _database.GetCollection<UserDocument>(_settings.UsersCollectionName);
             var indexKeysDefinition = Builders<UserDocument>.IndexKeys.Ascending(u => u.Correo);
             var indexOptions = new CreateIndexOptions { Unique = true };
             var indexModel = new CreateIndexModel<UserDocument>(indexKeysDefinition, indexOptions);
 
-            usersCollection.Indexes.CreateOne(indexModel);
+            Users.Indexes.CreateOne(indexModel);
         }
         catch (Exception ex)
         {
