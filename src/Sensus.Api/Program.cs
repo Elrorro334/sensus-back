@@ -7,8 +7,10 @@ using Sensus.Api.Middlewares;
 using Sensus.Api.Services;
 using Sensus.Application;
 using Sensus.Application.Common.Interfaces;
+using Sensus.Domain.Repositories;
 using Sensus.Infrastructure;
 using Sensus.Infrastructure.Authentication;
+using Sensus.Infrastructure.Migration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,7 +56,37 @@ builder.Services.AddAuthorization();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// Documentación OpenAPI
+// Documentación Swagger y OpenAPI con soporte para JWT Bearer
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Sensus API",
+        Version = "v1",
+        Description = "API backend empresarial de Sensus con Clean Architecture, CQRS, MongoDB Atlas y autenticación JWT."
+    });
+
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Pega aquí tu token JWT obtenido en /login",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    };
+
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", document),
+            new List<string>()
+        }
+    });
+});
 builder.Services.AddOpenApi();
 
 // Health Checks
@@ -87,20 +119,17 @@ if (app.Environment.IsDevelopment())
     });
     app.MapOpenApi();
 
-    // Sembrado de entidades relacionales de prueba
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await ApplicationDbContextSeed.SeedSampleDataAsync(dbContext);
-
     // Sembrado del usuario Administrador (si se configuran variables de entorno)
+    using var scope = app.Services.CreateScope();
     var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     await AdminUserSeeder.SeedAdminUserAsync(userRepository, passwordHasher, app.Configuration, logger);
 }
-
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+else
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -110,7 +139,7 @@ app.MapHealthChecks("/health");
 
 // Registro de endpoints
 app.MapAuthEndpoints();
-app.MapSensorEndpoints();
+app.MapComercioEndpoints();
 
 app.Run();
 
