@@ -22,6 +22,12 @@ public sealed class UserDocument
     [BsonElement("passwordHash")]
     public string PasswordHash { get; set; } = string.Empty;
 
+    [BsonElement("securityStamp")]
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
+    [BsonElement("fotoPerfilUrl")]
+    public string? FotoPerfilUrl { get; set; }
+
     [BsonElement("aceptoTerminos")]
     public bool AceptoTerminos { get; set; }
 
@@ -48,6 +54,8 @@ public sealed class UserDocument
             NombreCompleto = user.NombreCompleto,
             Correo = user.Correo,
             PasswordHash = user.PasswordHash,
+            SecurityStamp = user.SecurityStamp,
+            FotoPerfilUrl = user.FotoPerfilUrl,
             AceptoTerminos = user.AceptoTerminos,
             FechaAceptacionTerminos = user.FechaAceptacionTerminos,
             Estatus = user.Estatus,
@@ -64,10 +72,16 @@ public sealed class UserDocument
             Correo,
             PasswordHash,
             AceptoTerminos,
-            FechaRegistro).Value;
+            FechaRegistro,
+            string.IsNullOrWhiteSpace(SecurityStamp) ? Guid.NewGuid().ToString("N") : SecurityStamp).Value;
 
         // Establecer el Id persistido y estado
         typeof(User).GetProperty("Id")?.SetValue(user, Id);
+
+        if (!string.IsNullOrWhiteSpace(FotoPerfilUrl))
+        {
+            user.UpdateProfile(NombreCompleto, FotoPerfilUrl);
+        }
 
         if (!Estatus)
         {

@@ -1,6 +1,15 @@
 namespace Sensus.Application.Comercios.DTOs;
 
 /// <summary>
+/// DTO que representa el horario de un día de la semana.
+/// </summary>
+public sealed record HorarioDiaDto(
+    DayOfWeek Dia,
+    string? HoraApertura,
+    string? HoraCierre,
+    bool EstaCerrado);
+
+/// <summary>
 /// DTO con los datos de detalle de un comercio.
 /// </summary>
 public sealed record ComercioDto(
@@ -12,4 +21,5 @@ public sealed record ComercioDto(
     double Latitud,
     double Longitud,
     bool Activo,
-    DateTime FechaRegistro);
+    DateTime FechaRegistro,
+    IReadOnlyList<HorarioDiaDto>? Horarios = null);

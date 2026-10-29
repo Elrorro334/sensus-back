@@ -61,10 +61,17 @@ public sealed class RegisterComercioCommandHandler : IRequestHandler<RegisterCom
         }
 
         // Geocodificación (SE-003: Latitud/Longitud para GeoJSON)
-        var (latitud, longitud) = await _geocodingService.GeocodeAddressAsync(
+        var geocodeResult = await _geocodingService.GeocodeAddressAsync(
             request.Direccion,
             request.CodigoPostal,
             cancellationToken);
+
+        if (geocodeResult.IsFailure)
+        {
+            return Result.Failure<RegisterComercioResponseDto>(geocodeResult.Error);
+        }
+
+        var (latitud, longitud) = geocodeResult.Value;
 
         var now = _dateTimeProvider.UtcNow;
         var comercioResult = Comercio.Create(

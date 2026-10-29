@@ -1,13 +1,16 @@
 using Sensus.Domain.Common;
 using Sensus.Domain.Events;
+using Sensus.Domain.ValueObjects;
 
 namespace Sensus.Domain.Entities;
 
 /// <summary>
-/// Raíz de Agregado Comercio que representa el local comercial del usuario (SE-003 & SE-004).
+/// Raíz de Agregado Comercio que representa el local comercial del usuario (SE-003, SE-004 y SE-007).
 /// </summary>
 public class Comercio : BaseAuditableEntity, IAggregateRoot
 {
+    private readonly List<HorarioDia> _horarios = [];
+
     public Guid UsuarioId { get; private set; }
     public string NombreComercial { get; private set; } = string.Empty;
     public string Direccion { get; private set; } = string.Empty;
@@ -16,6 +19,8 @@ public class Comercio : BaseAuditableEntity, IAggregateRoot
     public double Longitud { get; private set; }
     public bool Activo { get; private set; }
     public DateTime FechaRegistro { get; private set; }
+
+    public IReadOnlyCollection<HorarioDia> Horarios => _horarios.AsReadOnly();
 
     // Constructor privado para serialización / ORM
     private Comercio() : base()
@@ -97,7 +102,22 @@ public class Comercio : BaseAuditableEntity, IAggregateRoot
     }
 
     /// <summary>
-    /// Actualiza los datos de ubicación e información comercial.
+    /// Determina si la ubicación física (dirección y/o código postal) cambió respecto al estado actual.
+    /// </summary>
+    public bool HasPhysicalLocationChanged(string nuevaDireccion, string nuevoCodigoPostal)
+    {
+        var normalizedCurrentDir = Direccion.Trim();
+        var normalizedNewDir = nuevaDireccion.Trim();
+
+        var normalizedCurrentCp = CodigoPostal.Trim();
+        var normalizedNewCp = nuevoCodigoPostal.Trim();
+
+        return !string.Equals(normalizedCurrentDir, normalizedNewDir, StringComparison.OrdinalIgnoreCase) ||
+               !string.Equals(normalizedCurrentCp, normalizedNewCp, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Actualiza los datos de ubicación e información comercial (SE-007).
     /// </summary>
     public Result UpdateDetails(
         string nombreComercial,
@@ -129,6 +149,25 @@ public class Comercio : BaseAuditableEntity, IAggregateRoot
         CodigoPostal = codigoPostal.Trim();
         Latitud = latitud;
         Longitud = longitud;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Actualiza la lista de horarios de atención por día (SE-007).
+    /// </summary>
+    public Result UpdateHorarios(IEnumerable<HorarioDia> horarios)
+    {
+        var list = horarios.ToList();
+        var distinctDays = list.Select(h => h.Dia).Distinct().Count();
+        if (distinctDays != list.Count)
+        {
+            return Result.Failure(
+                Error.Validation("Comercio.HorariosDuplicados", "No puede haber horarios duplicados para un mismo día de la semana."));
+        }
+
+        _horarios.Clear();
+        _horarios.AddRange(list);
 
         return Result.Success();
     }

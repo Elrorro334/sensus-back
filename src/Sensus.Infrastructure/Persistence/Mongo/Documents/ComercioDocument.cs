@@ -1,12 +1,29 @@
+using System.Globalization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver.GeoJsonObjectModel;
 using Sensus.Domain.Entities;
+using Sensus.Domain.ValueObjects;
 
 namespace Sensus.Infrastructure.Persistence.Mongo.Documents;
 
+public sealed class HorarioDiaDocument
+{
+    [BsonElement("dia")]
+    public DayOfWeek Dia { get; set; }
+
+    [BsonElement("horaApertura")]
+    public string? HoraApertura { get; set; }
+
+    [BsonElement("horaCierre")]
+    public string? HoraCierre { get; set; }
+
+    [BsonElement("estaCerrado")]
+    public bool EstaCerrado { get; set; }
+}
+
 /// <summary>
-/// Documento de comercio en MongoDB Atlas con soporte para coordenadas GeoJSON (SE-003 & SE-004).
+/// Documento de comercio en MongoDB Atlas con soporte para coordenadas GeoJSON y horarios (SE-003, SE-004 y SE-007).
 /// </summary>
 public sealed class ComercioDocument
 {
@@ -42,6 +59,9 @@ public sealed class ComercioDocument
     [BsonElement("fechaRegistro")]
     public DateTime FechaRegistro { get; set; }
 
+    [BsonElement("horarios")]
+    public List<HorarioDiaDocument> Horarios { get; set; } = [];
+
     public static ComercioDocument FromDomain(Comercio comercio)
     {
         return new ComercioDocument
@@ -55,7 +75,14 @@ public sealed class ComercioDocument
             Longitud = comercio.Longitud,
             Ubicacion = GeoJson.Point(GeoJson.Geographic(comercio.Longitud, comercio.Latitud)),
             Activo = comercio.Activo,
-            FechaRegistro = comercio.FechaRegistro
+            FechaRegistro = comercio.FechaRegistro,
+            Horarios = comercio.Horarios.Select(h => new HorarioDiaDocument
+            {
+                Dia = h.Dia,
+                HoraApertura = h.HoraApertura?.ToString("HH:mm", CultureInfo.InvariantCulture),
+                HoraCierre = h.HoraCierre?.ToString("HH:mm", CultureInfo.InvariantCulture),
+                EstaCerrado = h.EstaCerrado
+            }).ToList()
         };
     }
 
@@ -75,6 +102,28 @@ public sealed class ComercioDocument
         if (!Activo)
         {
             comercio.Deactivate();
+        }
+
+        if (Horarios.Count > 0)
+        {
+            var domainHorarios = new List<HorarioDia>();
+            foreach (var h in Horarios)
+            {
+                if (h.EstaCerrado)
+                {
+                    domainHorarios.Add(HorarioDia.Cerrado(h.Dia).Value);
+                }
+                else if (TimeOnly.TryParse(h.HoraApertura, CultureInfo.InvariantCulture, out var ap) &&
+                         TimeOnly.TryParse(h.HoraCierre, CultureInfo.InvariantCulture, out var ci))
+                {
+                    var res = HorarioDia.Abierto(h.Dia, ap, ci);
+                    if (res.IsSuccess)
+                    {
+                        domainHorarios.Add(res.Value);
+                    }
+                }
+            }
+            comercio.UpdateHorarios(domainHorarios);
         }
 
         comercio.ClearDomainEvents();

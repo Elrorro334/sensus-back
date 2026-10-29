@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Sensus.Application.Common.Interfaces;
+using Sensus.Domain.Enums;
 
 namespace Sensus.Api.Services;
 
@@ -15,10 +16,29 @@ public sealed class CurrentUserService : ICurrentUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
+    private ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
+
     public string? UserId =>
-        _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-        _httpContextAccessor.HttpContext?.User?.FindFirstValue("sub");
+        User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
+        User?.FindFirstValue("sub");
+
+    public string? Email =>
+        User?.FindFirstValue(ClaimTypes.Email) ??
+        User?.FindFirstValue("email");
+
+    public IReadOnlyList<string> Roles =>
+        User?.FindAll(ClaimTypes.Role)
+            .Concat(User?.FindAll("role") ?? [])
+            .Select(c => c.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList() ?? [];
 
     public bool IsAuthenticated =>
-        _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+        User?.Identity?.IsAuthenticated ?? false;
+
+    public bool IsGuest =>
+        Roles.Contains(RoleType.Invitado, StringComparer.OrdinalIgnoreCase);
+
+    public bool IsMerchant =>
+        Roles.Contains(RoleType.Comerciante, StringComparer.OrdinalIgnoreCase);
 }

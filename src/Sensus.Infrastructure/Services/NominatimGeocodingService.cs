@@ -3,20 +3,17 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Sensus.Application.Common.Interfaces;
+using Sensus.Domain.Common;
 
 namespace Sensus.Infrastructure.Services;
 
 /// <summary>
-/// Servicio de geocodificación mediante OpenStreetMap Nominatim con resiliencia y fallback para pruebas offline (SE-003).
+/// Servicio de geocodificación mediante OpenStreetMap Nominatim con resultado explícito (SE-003 & SE-007).
 /// </summary>
 public sealed class NominatimGeocodingService : IGeocodingService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<NominatimGeocodingService> _logger;
-
-    // Coordenadas de referencia por defecto (Ciudad de México) para fallback
-    private const double DefaultLatitude = 19.432608;
-    private const double DefaultLongitude = -99.133209;
 
     public NominatimGeocodingService(
         ILogger<NominatimGeocodingService> logger,
@@ -36,7 +33,7 @@ public sealed class NominatimGeocodingService : IGeocodingService
         }
     }
 
-    public async Task<(double Latitude, double Longitude)> GeocodeAddressAsync(
+    public async Task<Result<(double Latitude, double Longitude)>> GeocodeAddressAsync(
         string direccion,
         string codigoPostal,
         CancellationToken cancellationToken = default)
@@ -58,23 +55,27 @@ public sealed class NominatimGeocodingService : IGeocodingService
                         "Dirección '{Query}' geocodificada exitosamente: ({Lat}, {Lon})",
                         searchQuery, lat, lon);
 
-                    return (lat, lon);
+                    return Result.Success((lat, lon));
                 }
             }
 
             _logger.LogWarning(
-                "Nominatim no encontró resultados para '{Query}'. Asignando coordenadas de referencia.",
+                "Nominatim no encontró resultados para '{Query}'.",
                 searchQuery);
+
+            return Result.Failure<(double Latitude, double Longitude)>(
+                Error.Unprocessable("Geocoding.NotFound", $"No fue posible localizar coordenadas para '{searchQuery}'."));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(
                 ex,
-                "Error al conectar con el servicio de geocodificación externa para '{Query}'. Usando coordenadas de respaldo.",
+                "Error al conectar con el servicio de geocodificación externa para '{Query}'.",
                 searchQuery);
-        }
 
-        return (DefaultLatitude, DefaultLongitude);
+            return Result.Failure<(double Latitude, double Longitude)>(
+                Error.Unprocessable("Geocoding.ServiceUnavailable", "El servicio de geocodificación no se encuentra disponible temporalmente."));
+        }
     }
 
     private sealed class NominatimResult

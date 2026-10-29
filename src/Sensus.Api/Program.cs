@@ -1,12 +1,15 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Sensus.Api.Endpoints;
+using Sensus.Api.Extensions;
 using Sensus.Api.Middlewares;
 using Sensus.Api.Services;
 using Sensus.Application;
 using Sensus.Application.Common.Interfaces;
+using Sensus.Domain.Enums;
 using Sensus.Domain.Repositories;
 using Sensus.Infrastructure;
 using Sensus.Infrastructure.Authentication;
@@ -24,9 +27,11 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-// Configuración de Autenticación con JWT Bearer
+// Configuración de Autenticación con JWT Bearer y validación de SecurityStamp
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? new JwtSettings();
-var secretKey = Encoding.UTF8.GetBytes(jwtSettings.Secret);
+var secretKey = Encoding.UTF8.GetBytes(string.IsNullOrEmpty(jwtSettings.Secret) 
+    ? "Sensus_Fallback_Key_For_Early_Initialization_Must_Be_At_Least_32_Chars!" 
+    : jwtSettings.Secret);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -35,7 +40,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -48,9 +53,55 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var userPrincipal = context.Principal;
+            if (userPrincipal is null)
+            {
+                context.Fail("Principal no disponible.");
+                return;
+            }
+
+            var isGuest = userPrincipal.IsInRole(RoleType.Invitado);
+            if (isGuest)
+            {
+                // Las sesiones de invitado son efímeras y no requieren validación contra BD
+                return;
+            }
+
+            var userIdString = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                               userPrincipal.FindFirstValue("sub");
+
+            if (!Guid.TryParse(userIdString, out var userId))
+            {
+                context.Fail("Identificador de usuario inválido en token.");
+                return;
+            }
+
+            var userRepository = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+            var user = await userRepository.GetByIdAsync(userId, context.HttpContext.RequestAborted);
+
+            if (user is null || !user.Estatus)
+            {
+                context.Fail("El usuario no existe o se encuentra inactivo.");
+                return;
+            }
+
+            var tokenSecurityStamp = userPrincipal.FindFirstValue(JwtTokenGenerator.SecurityStampClaimType);
+            if (tokenSecurityStamp is not null && !string.Equals(tokenSecurityStamp, user.SecurityStamp, StringComparison.Ordinal))
+            {
+                context.Fail("La sesión ha sido revocada o la contraseña fue restablecida.");
+            }
+        }
+    };
 });
 
-builder.Services.AddAuthorization();
+// Políticas de Autorización y Rate Limiting
+builder.Services.AddAppAuthorizationPolicies();
+builder.Services.AddSecurityRateLimiting();
 
 // Manejo global de excepciones con ProblemDetails (RFC 7807)
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -92,14 +143,24 @@ builder.Services.AddOpenApi();
 // Health Checks
 builder.Services.AddHealthChecks();
 
-// Configuración de CORS amplia para desarrollo
+// Configuración de CORS segura con allowlist
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        if (builder.Environment.IsDevelopment() && allowedOrigins.Length == 0)
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins.Length > 0 ? allowedOrigins : ["http://localhost:3000", "http://localhost:5173"])
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
     });
 });
 
@@ -107,7 +168,9 @@ var app = builder.Build();
 
 // Pipeline HTTP
 app.UseExceptionHandler();
+app.UseSecurityHeaders();
 app.UseCors("AllowAll");
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
@@ -128,6 +191,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseHsts();
     app.UseHttpsRedirection();
 }
 
@@ -139,7 +203,9 @@ app.MapHealthChecks("/health");
 
 // Registro de endpoints
 app.MapAuthEndpoints();
+app.MapUserEndpoints();
 app.MapComercioEndpoints();
+app.MapMerchantEndpoints();
 
 app.Run();
 

@@ -1,10 +1,11 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Sensus.Application.Common.Interfaces;
 
 namespace Sensus.Application.Common.Behaviors;
 
 /// <summary>
-/// Pipeline Behavior para logging estructurado de comandos y consultas.
+/// Pipeline Behavior para logging estructurado y seguro de comandos y consultas.
 /// </summary>
 public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
@@ -23,7 +24,14 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
     {
         var requestName = typeof(TRequest).Name;
 
-        _logger.LogInformation("Iniciando solicitud: {RequestName} {@Request}", requestName, request);
+        if (request is ISensitiveRequest)
+        {
+            _logger.LogInformation("Iniciando solicitud confidencial: {RequestName} [DATOS REDACTADOS POR SEGURIDAD]", requestName);
+        }
+        else
+        {
+            _logger.LogInformation("Iniciando solicitud: {RequestName} {@Request}", requestName, request);
+        }
 
         try
         {

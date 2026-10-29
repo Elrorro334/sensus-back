@@ -8,4 +8,5 @@ public sealed class MongoDbSettings
     public string DatabaseName { get; set; } = "SensusDb";
     public string UsersCollectionName { get; set; } = "usuarios";
     public string ComerciosCollectionName { get; set; } = "comercios";
+    public string PasswordResetTokensCollectionName { get; set; } = "password_reset_tokens";
 }

@@ -7,4 +7,5 @@ public sealed record UserDto(
     IReadOnlyList<string> Roles,
     bool Estatus,
     DateTime FechaRegistro,
-    DateTime? UltimoAcceso);
+    DateTime? UltimoAcceso,
+    string? FotoPerfilUrl = null);

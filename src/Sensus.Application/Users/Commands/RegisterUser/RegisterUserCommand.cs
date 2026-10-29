@@ -1,4 +1,5 @@
 using MediatR;
+using Sensus.Application.Common.Interfaces;
 using Sensus.Application.Users.DTOs;
 using Sensus.Domain.Common;
 
@@ -11,4 +12,4 @@ public sealed record RegisterUserCommand(
     string NombreCompleto,
     string Correo,
     string Password,
-    bool AceptoTerminos) : IRequest<Result<AuthResponseDto>>;
+    bool AceptoTerminos) : IRequest<Result<AuthResponseDto>>, ISensitiveRequest;

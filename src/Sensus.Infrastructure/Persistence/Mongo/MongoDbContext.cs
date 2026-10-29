@@ -43,6 +43,10 @@ public sealed class MongoDbContext
         _database?.GetCollection<ComercioDocument>(_settings.ComerciosCollectionName)
         ?? throw new InvalidOperationException("La conexión a MongoDB Atlas no está configurada. Configure 'MongoDbSettings:ConnectionString'.");
 
+    public IMongoCollection<PasswordResetTokenDocument> PasswordResetTokens =>
+        _database?.GetCollection<PasswordResetTokenDocument>(_settings.PasswordResetTokensCollectionName)
+        ?? throw new InvalidOperationException("La conexión a MongoDB Atlas no está configurada. Configure 'MongoDbSettings:ConnectionString'.");
+
     private void ConfigureIndexes()
     {
         if (_database is null) return;
@@ -76,6 +80,24 @@ public sealed class MongoDbContext
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Nota: Los índices de comercios ya existen o el clúster aún no está disponible.");
+        }
+
+        try
+        {
+            var tokensCollection = _database.GetCollection<PasswordResetTokenDocument>(_settings.PasswordResetTokensCollectionName);
+
+            // Índice para TokenHash
+            var hashIndexKeys = Builders<PasswordResetTokenDocument>.IndexKeys.Ascending(t => t.TokenHash);
+            tokensCollection.Indexes.CreateOne(new CreateIndexModel<PasswordResetTokenDocument>(hashIndexKeys));
+
+            // Índice TTL en ExpiresAtUtc
+            var ttlIndexKeys = Builders<PasswordResetTokenDocument>.IndexKeys.Ascending(t => t.ExpiresAtUtc);
+            var ttlOptions = new CreateIndexOptions { ExpireAfter = TimeSpan.Zero };
+            tokensCollection.Indexes.CreateOne(new CreateIndexModel<PasswordResetTokenDocument>(ttlIndexKeys, ttlOptions));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Nota: Los índices de tokens ya existen o el clúster aún no está disponible.");
         }
     }
 }

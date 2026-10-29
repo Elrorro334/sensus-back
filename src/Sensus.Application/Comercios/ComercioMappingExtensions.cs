@@ -1,3 +1,4 @@
+using System.Globalization;
 using Sensus.Application.Comercios.DTOs;
 using Sensus.Domain.Entities;
 
@@ -7,6 +8,12 @@ public static class ComercioMappingExtensions
 {
     public static ComercioDto ToDto(this Comercio comercio)
     {
+        var horariosDto = comercio.Horarios.Select(h => new HorarioDiaDto(
+            h.Dia,
+            h.HoraApertura?.ToString("HH:mm", CultureInfo.InvariantCulture),
+            h.HoraCierre?.ToString("HH:mm", CultureInfo.InvariantCulture),
+            h.EstaCerrado)).ToList();
+
         return new ComercioDto(
             comercio.Id,
             comercio.UsuarioId,
@@ -16,6 +23,7 @@ public static class ComercioMappingExtensions
             comercio.Latitud,
             comercio.Longitud,
             comercio.Activo,
-            comercio.FechaRegistro);
+            comercio.FechaRegistro,
+            horariosDto);
     }
 }

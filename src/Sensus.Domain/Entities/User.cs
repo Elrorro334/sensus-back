@@ -14,6 +14,8 @@ public class User : BaseEntity, IAggregateRoot
     public string NombreCompleto { get; private set; } = string.Empty;
     public string Correo { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
+    public string SecurityStamp { get; private set; } = Guid.NewGuid().ToString("N");
+    public string? FotoPerfilUrl { get; private set; }
     public bool AceptoTerminos { get; private set; }
     public DateTime? FechaAceptacionTerminos { get; private set; }
     public bool Estatus { get; private set; }
@@ -33,11 +35,13 @@ public class User : BaseEntity, IAggregateRoot
         string correo,
         string passwordHash,
         bool aceptoTerminos,
-        DateTime fechaRegistro) : base(id)
+        DateTime fechaRegistro,
+        string? securityStamp = null) : base(id)
     {
         NombreCompleto = nombreCompleto;
         Correo = correo;
         PasswordHash = passwordHash;
+        SecurityStamp = string.IsNullOrWhiteSpace(securityStamp) ? Guid.NewGuid().ToString("N") : securityStamp;
         AceptoTerminos = aceptoTerminos;
         FechaAceptacionTerminos = aceptoTerminos ? fechaRegistro : null;
         Estatus = true; // Activo por defecto
@@ -53,7 +57,8 @@ public class User : BaseEntity, IAggregateRoot
         string correo,
         string passwordHash,
         bool aceptoTerminos,
-        DateTime fechaRegistro)
+        DateTime fechaRegistro,
+        string? securityStamp = null)
     {
         if (string.IsNullOrWhiteSpace(nombreCompleto))
         {
@@ -80,7 +85,8 @@ public class User : BaseEntity, IAggregateRoot
             normalizedEmail,
             passwordHash,
             aceptoTerminos,
-            fechaRegistro);
+            fechaRegistro,
+            securityStamp);
 
         user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Correo, user.NombreCompleto));
 
@@ -121,19 +127,48 @@ public class User : BaseEntity, IAggregateRoot
     }
 
     /// <summary>
-    /// Actualiza el hash de contraseña en caso de recuperación o cambio.
+    /// Actualiza el hash de contraseña en caso de recuperación o cambio e invalida tokens previos.
     /// </summary>
     public void UpdatePassword(string newPasswordHash)
     {
         PasswordHash = newPasswordHash;
+        RotateSecurityStamp();
     }
 
     /// <summary>
-    /// Desactiva la cuenta del usuario.
+    /// Rota el SecurityStamp para invalidar sesiones activas.
+    /// </summary>
+    public void RotateSecurityStamp()
+    {
+        SecurityStamp = Guid.NewGuid().ToString("N");
+    }
+
+    /// <summary>
+    /// Actualiza la información personal del perfil (SE-006).
+    /// </summary>
+    public Result UpdateProfile(string nombreCompleto, string? fotoPerfilUrl)
+    {
+        if (string.IsNullOrWhiteSpace(nombreCompleto))
+        {
+            return Result.Failure(Error.Validation("User.NombreVacio", "El nombre completo no puede estar vacío."));
+        }
+
+        NombreCompleto = nombreCompleto.Trim();
+        if (fotoPerfilUrl is not null)
+        {
+            FotoPerfilUrl = fotoPerfilUrl.Trim();
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Desactiva la cuenta del usuario e invalida sesiones activas.
     /// </summary>
     public void Deactivate()
     {
         Estatus = false;
+        RotateSecurityStamp();
     }
 
     /// <summary>

@@ -57,4 +57,10 @@ public sealed class MongoUserRepository : IUserRepository
         var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, user.Id);
         await _context.Users.ReplaceOneAsync(filter, document, cancellationToken: cancellationToken);
     }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, id);
+        await _context.Users.DeleteOneAsync(filter, cancellationToken);
+    }
 }

@@ -14,6 +14,7 @@ public static class UserMappingExtensions
             user.Roles.ToList(),
             user.Estatus,
             user.FechaRegistro,
-            user.UltimoAcceso);
+            user.UltimoAcceso,
+            user.FotoPerfilUrl);
     }
 }
