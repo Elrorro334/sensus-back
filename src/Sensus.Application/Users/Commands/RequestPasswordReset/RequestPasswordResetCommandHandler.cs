@@ -60,13 +60,17 @@ public sealed class RequestPasswordResetCommandHandler : IRequestHandler<Request
 
         // Construir plantilla y disparar correo
         var resetLink = $"https://rodnix.com.mx/sensus/reset?token={rawToken}";
+        var appSchemeLink = $"sensus://reset?token={rawToken}";
         var htmlBody = $@"
 <div style='font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #EFE9FA; border-radius: 16px;'>
     <h2 style='color: #4A148C;'>Recuperación de contraseña de Sensus</h2>
     <p>Hola <strong>{user.NombreCompleto}</strong>,</p>
-    <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón siguiente para definir una nueva:</p>
+    <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón siguiente para abrir la app y definir una nueva contraseña:</p>
     <p style='text-align: center; margin: 30px 0;'>
-        <a href='{resetLink}' style='background-color: #4A148C; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;'>Restablecer mi contraseña</a>
+        <a href='{resetLink}' style='background-color: #4A148C; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;'>Abrir en la App Sensus</a>
+    </p>
+    <p style='text-align: center; margin: 10px 0;'>
+        <a href='{appSchemeLink}' style='color: #4A148C; font-size: 13px; text-decoration: underline;'>¿No abre automáticamente? Toca aquí (sensus://)</a>
     </p>
     <p style='color: #716B7C; font-size: 14px;'>Este enlace es de un solo uso y vencerá en <strong>15 minutos</strong>.</p>
     <p style='color: #9A94A8; font-size: 12px;'>Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.</p>
@@ -76,7 +80,7 @@ public sealed class RequestPasswordResetCommandHandler : IRequestHandler<Request
             user.Correo,
             "Restablece tu contraseña - Sensus",
             htmlBody,
-            $"Restablece tu contraseña ingresando a: {resetLink} (vigencia de 15 minutos).",
+            $"Restablece tu contraseña en la App Sensus: {resetLink} o {appSchemeLink} (vigencia de 15 minutos).",
             cancellationToken);
 
         return Result.Success();

@@ -10,13 +10,16 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IProfileImageStorage? _imageStorage;
 
     public UpdateProfileCommandHandler(
         IUserRepository userRepository,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IProfileImageStorage? imageStorage = null)
     {
         _userRepository = userRepository;
         _currentUserService = currentUserService;
+        _imageStorage = imageStorage;
     }
 
     public async Task<Result<UserDto>> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
@@ -33,6 +36,8 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
             return Result.Failure<UserDto>(Error.NotFound("User.NotFound", "El usuario no existe o se encuentra inactivo."));
         }
 
+        var previousPhotoUrl = user.FotoPerfilUrl;
+
         var updateResult = user.UpdateProfile(request.NombreCompleto, request.FotoPerfilUrl);
         if (updateResult.IsFailure)
         {
@@ -40,6 +45,14 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
         }
 
         await _userRepository.UpdateAsync(user, cancellationToken);
+
+        // Limpiar la foto anterior en Cloudinary para no acumular imágenes huérfanas en plan Free
+        if (_imageStorage is not null &&
+            !string.IsNullOrWhiteSpace(previousPhotoUrl) &&
+            !string.Equals(previousPhotoUrl, user.FotoPerfilUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            await _imageStorage.DeleteImageAsync(previousPhotoUrl, cancellationToken);
+        }
 
         return Result.Success(user.ToDto());
     }
