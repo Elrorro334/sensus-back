@@ -107,14 +107,17 @@ La API queda en `https://localhost:5001`. En desarrollo el documento OpenAPI est
 `/openapi/v1.json` y la interfaz de Swagger en `/swagger`.
 
 **Variables de entorno obligatorias:** `MONGO_CONNECTION_STRING`, `JWT__SECRET`, `JWT__ISSUER`,
-`JWT__AUDIENCE`. En local se pueden usar *user-secrets*:
+`JWT__AUDIENCE`. En local se pueden usar *user-secrets* (el `UserSecretsId` ya está declarado en
+`src/Sensus.Api/Sensus.Api.csproj`):
 
 ```bash
-dotnet user-secrets --project src/Sensus.Api set "Jwt:Secret" "<valor-generado>"
+dotnet user-secrets --project src/Sensus.Api set "JwtSettings:Secret" "<valor-generado>"
+dotnet user-secrets --project src/Sensus.Api set "MongoDbSettings:ConnectionString" "mongodb://sensus:sensus-local-only@localhost:27017/?authSource=admin"
 ```
 
-> El secreto JWT que figura en `src/Sensus.Api/appsettings.json` está comprometido y debe rotarse antes
-> de cualquier despliegue (specs 001 y 002).
+> La nomenclatura es la del objeto de opciones (`JwtSettings:Secret`), no la de variables de entorno.
+> Secreto JWT pendiente de rotación y de retiro de `appsettings.Development.json` (specs 001 y 002);
+> `Program.cs` todavía usa una clave de reemplazo cuando `JwtSettings:Secret` está vacío.
 
 ---
 

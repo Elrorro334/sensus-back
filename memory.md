@@ -1,6 +1,6 @@
 # Memoria del Proyecto — Sensus Backend
 
-**Version:** 2.1.0 · **Actualizado:** 2026-10-29 · **Alineado a:** `constitution.md` v1.2.0 · `AGENTS.md` v1.2.0
+**Version:** 2.2.0 · **Actualizado:** 2026-11-04 · **Alineado a:** `constitution.md` v1.2.0 · `AGENTS.md` v1.2.0
 
 > Estado vivo del proyecto para reanudar trabajo sin perder contexto. No es normativo: si contradice a
 > `constitution.md`, prevalece la constitución y este archivo se corrige.
@@ -11,15 +11,15 @@
 
 | Campo | Valor |
 |---|---|
-| Última actualización | 2026-10-29 |
-| Fase SDD | `specify` completada — 43 specs activas y 1 en backlog, alineadas al catálogo de 29 endpoints |
-| Rama de trabajo | `Sprint1` (clon local, sin cambios confirmados en Git) |
+| Última actualización | 2026-11-04 |
+| Fase SDD | `specify` completada — 43 specs activas y 1 en backlog; el SDD convive con el código de Sprint 1 en la rama `SprintOscar` |
+| Rama de trabajo | `SprintOscar`, creada desde `origin/Sprint1` de `sensus-proj/sensus-back`; `Sprint1` de la organización permanece sin modificar |
 | Agente | OpenCode — Big Pickle |
 | Constitución vigente | v1.2.0 (enmendada 2026-10-29) |
 | AGENTS.md vigente | v1.2.0 |
-| Solución .NET | `sensus-back.sln` (existe; `sensus-back.slnx` duplicado, pendiente de retirar) |
-| Última tarea completada | Realineamiento del backlog al catálogo de endpoints, enmienda v1.2.0 y verificación final (44 specs, 29/29 endpoints, build y pruebas en verde) |
-| Restricción activa | **Sin operaciones de Git** hasta autorización del responsable |
+| Solución .NET | `sensus-back.sln` (9 proyectos: `src` + TestKit, UnitTests, IntegrationTests, E2ETests, ArchitectureTests); `sensus-back.slnx` retirado |
+| Última tarea completada | Migración a `sensus-proj/sensus-back`: cherry-pick del commit SDD sobre el tip del equipo y resolución de conflictos en `Directory.Build.props` y `.editorconfig`. Verificado: `dotnet build -warnaserror` sin advertencias y 135 pruebas en verde |
+| Restricción activa | Git autorizado **solo** para esta migración (rama `SprintOscar`); cualquier otra operación sigue requiriendo autorización del responsable |
 
 ---
 
@@ -62,6 +62,7 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
 | D17 | Solo se añaden capacidades fuera del catálogo cuando son obligatorias: logout, `GET` de perfil, `GET /merchants/me`, health checks | 2026-10-29 | Además se cierran dos huecos funcionales: confirmación de recuperación y canje del QR |
 | D18 | Las coordenadas del comercio las aporta el cliente y se validan en el servidor; sin proveedor de geocodificación | 2026-10-29 | Elimina una dependencia externa y cumple §2.2 |
 | D19 | Ranking determinista en `Sensus.Application`, sin servicio de ML externo | 2026-10-29 | ADR 0009; specs 041–043 con métricas medibles |
+| D20 | El repositorio canónico pasa a `sensus-proj/sensus-back`; `Elrorro334/sensus-back` queda como remote `legacy` de solo lectura. El SDD se integra por rama `SprintOscar` y PR a `Sprint1` | 2026-11-04 | `origin` apunta a la organización; `Sprint1` y `main` de la organización no se tocan sin PR |
 
 ---
 
@@ -88,17 +89,21 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
 
 ## E. Hallazgos y riesgos abiertos
 
-- **Secreto JWT versionado** en `src/Sensus.Api/appsettings.json`
-  (`SensusSuperSecretKey2026_Minimum32CharactersLong_Enterprise!`): debe rotarse y moverse a configuración
-  segura. Afecta a los specs 001 y 002.
-- **Paquetes de EF Core** en `src/Sensus.Infrastructure/Sensus.Infrastructure.csproj` sin uso: violan la
-  prohibición de ORM relacional. Retirar.
+- **Secretos JWT versionados (bloqueante)**: `appsettings.Development.json` contiene
+  `Sensus_Dev_Environment_Rotated_Secret_Key_Minimum_32_Chars_2026!` y `src/Sensus.Api/Program.cs` define
+  una clave de reemplazo hardcodeada (`Sensus_Fallback_Key_For_Early_Initialization_...`) cuando
+  `JwtSettings:Secret` está vacío. El valor histórico
+  `SensusSuperSecretKey2026_Minimum32CharactersLong_Enterprise!` sigue en el historial de ambos repos.
+  **Acción**: rotar la clave, retirar el fallback de `Program.cs`, mover el secreto de desarrollo a
+  *user-secrets* y purgar el historial. No se tocó en esta rama para no alterar el despliegue del equipo
+  (specs 001 y 002). `JwtSettingsValidator` ya rechaza los valores filtrados conocidos.
 - **CORS `AllowAnyOrigin`** y `RequireHttpsMetadata = false` en `src/Sensus.Api/Program.cs` (spec 012).
-- **Cobertura real por debajo del umbral**: medido con `dotnet test --collect:"XPlat Code Coverage"`,
-  Domain 25.89 % y Application 34.78 % frente al 80 % exigido. El gate de CI fallará hasta remediarlo.
-- **Sin pruebas de integración**: no existe `tests/Sensus.IntegrationTests/`. Ocho specs quedan en
-  `FAIL` de Constitution Check por este motivo y por brechas de plataforma (001, 002, 003, 005, 006, 012,
-  015, 023).
+- **Cobertura real por debajo del umbral**: el último cálculo local dio Domain 25.89 % y Application
+  34.78 % frente al 80 % exigido. El gate de CI fallará hasta remediarlo; no se ha vuelto a medir tras
+  integrar el código de Sprint 1.
+- **El código de Sprint 1 no está especificado**: 67ccc4e7, 10976027 y 594e20be añaden recuperación de
+  contraseña, modo invitado, eliminación de cuenta, perfil de comercio y Cloudinary sin ajustarse al flujo
+  `specify → clarify → plan → tasks → checklist`. Trazabilidad rota hasta regularizarlo.
 - **Endpoints legacy duplicados** `/api/v1/comercio/registro` y `/api/v1/comercio/mi-comercio`, más el
   alias `/api/v1/comercios` (spec 008).
 - **`PagedResult` sin uso**: no hay paginación implementada (spec 010).
@@ -111,24 +116,24 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
   responde 413 por encima.
 - **Sin IaC ni presupuesto**: el costo 0 USD no es verificable todavía.
 - **Sin OpenAPI unificado**: coexisten Swashbuckle y `Microsoft.AspNetCore.OpenApi` (spec 011).
-- **Sin operaciones de Git**: nada de lo anterior está confirmado; todo vive como archivos locales.
+- **Pruebas existentes**: 97 unitarias, 4 de arquitectura, 31 de integración y 3 E2E en verde tras la
+  integración. Los paquetes de EF Core sin uso ya se retiraron de `Sensus.Infrastructure`.
 
 ---
 
 ## F. Próximos pasos
 
-1. Ejecutar la ola 0: 009–011 (errores, paginación y OpenAPI) antes de tocar endpoints.
-2. Retirar `sensus-back.slnx` duplicado y los paquetes de EF Core sin uso
-   (`Microsoft.EntityFrameworkCore`, `.InMemory`, `.Relational`).
-3. Rotar el secreto JWT y sacarlo de `appsettings.json` (specs 001 y 002). Hasta entonces el escaneo de
-   secretos de CI fallará por diseño.
-4. Crear el proyecto `tests/Sensus.IntegrationTests/` con Testcontainers (desbloquea 8 specs en `FAIL`).
-5. Elevar la cobertura de Domain y Application al 80 % con pruebas reales de invariantes y handlers.
+1. Revisar y fusionar `SprintOscar` → `Sprint1` mediante PR en `sensus-proj/sensus-back`.
+2. Regularizar el código de Sprint 1 contra el SDD: specs retroactivas para recuperación de contraseña
+   (029), modo invitado, eliminación de cuenta (030), perfil de comercio (031) y almacenamiento de imagen
+   de perfil (022/023).
+3. Ejecutar la ola 0: 009–011 (errores, paginación y OpenAPI) antes de tocar endpoints.
+4. Rotar el secreto JWT y purgar el historial; hasta entonces el escaneo de secretos de CI puede fallar.
+5. Medir cobertura real y elevarla al 80 % en Domain y Application.
 6. Ejecutar la ola 1 (001–003, 029, 030) y después la ola 2 (005–007, 031–037).
 7. Renombrar las rutas implementadas a `/api/v1/merchants` y `/api/v1/users/profile`; retirar legacy en la
    ola 6 (spec 008).
 8. Inicializar `infra/` con CDK y la alarma de presupuesto; activar el job `iac` del pipeline.
-9. Cuando el responsable lo autorice: primera operación de Git (no antes).
 
 ---
 
@@ -150,6 +155,7 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
 | 1.0.0 | 2026-10-28 | Creación inicial. Estado de sesión, principios, decisiones D1–D6, artefactos y próximos pasos. |
 | 2.0.0 | 2026-10-29 | Reescritura al estado real: repositorio con solución .NET, 28 specs con cuatro artefactos, decisiones D7–D11, hallazgos de seguridad y próximos pasos revisados. Verificado: build Release sin warnings, 42 pruebas en verde, `dotnet format` limpio, cobertura real 25.89 % (Domain) y 34.78 % (Application). |
 | 2.1.0 | 2026-10-29 | Realineamiento al catálogo de 29 endpoints: 43 specs activas + 1 en backlog, enmienda constitucional v1.2.0, ADR 0007–0009, decisiones D12–D19, rutas `/api/v1` en inglés y cierre de huecos (QR, recuperación, perfil, ajustes, health). Verificado: `check-specs` 44/44, cobertura del catálogo 29/29, `dotnet build -c Release` sin advertencias y 42 pruebas en verde. |
+| 2.2.0 | 2026-11-04 | Migración a `sensus-proj/sensus-back` (D20): `origin` en la organización, `Elrorro334` como `legacy`, rama `SprintOscar` creada desde `origin/Sprint1` con el commit SDD aplicado por cherry-pick. Conflictos resueltos en `Directory.Build.props` (fusión de `NoWarn`, `AnalysisLevel` del equipo, bloqueo de calidad en Release y CI) y `.editorconfig` (unión de reglas). Se documentó el comando correcto de *user-secrets* (`JwtSettings:Secret`) y la deuda de los secretos JWT en `Program.cs` y `appsettings.Development.json`; el comportamiento del equipo no se modificó. Verificado: `dotnet build -warnaserror` sin advertencias y 135 pruebas en verde. |
 
 ---
 
