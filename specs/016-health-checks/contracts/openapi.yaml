@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: "Sensus API — Spec 016 Health checks"
+  version: 1.0.0
+  description: "Borrador del contrato del spec 016. Completar esquemas antes de implementar."
+servers:
+  - url: https://localhost:5001
+paths:
+  /health/live:
+    get:
+      summary: "Borrador de GET /health/live"
+      security: []
+      responses:
+        '200': { description: OK }
+        '400': { description: Solicitud inválida }
+  /health/ready:
+    get:
+      summary: "Borrador de GET /health/ready"
+      security: []
+      responses:
+        '200': { description: OK }
+        '400': { description: Solicitud inválida }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -67,7 +67,7 @@ public sealed class MongoDbContext
         try
         {
             var comerciosCollection = _database.GetCollection<ComercioDocument>(_settings.ComerciosCollectionName);
-            
+
             // Índice único para UsuarioId (un usuario tiene un solo comercio activo)
             var userIndexKeys = Builders<ComercioDocument>.IndexKeys.Ascending(c => c.UsuarioId);
             var userIndexOptions = new CreateIndexOptions { Unique = true };

@@ -1,0 +1,43 @@
+# Entorno local de desarrollo — Sensus Backend
+#
+# MongoDB 8.x para pruebas manuales y pruebas de integración locales.
+# Testcontainers levanta su propia instancia; este compose es solo para desarrollo.
+#
+#   docker compose up -d mongo
+#   docker compose logs -f mongo
+
+services:
+  mongo:
+    image: mongo:8
+    container_name: sensus-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-sensus}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-sensus-local-only}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-sensus}
+    volumes:
+      - sensus-mongo-data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+          "--username",
+          "${MONGO_ROOT_USER:-sensus}",
+          "--password",
+          "${MONGO_ROOT_PASSWORD:-sensus-local-only}",
+          "--authenticationDatabase",
+          "admin"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  sensus-mongo-data:

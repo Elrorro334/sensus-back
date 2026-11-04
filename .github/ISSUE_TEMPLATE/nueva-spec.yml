@@ -1,0 +1,99 @@
+name: Nueva especificación
+description: Proponer una capacidad nueva que aún no tiene spec
+title: "spec: <capacidad en una frase>"
+labels: ["spec", "sdd"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de continuar, comprueba en [`specs/README.md`](../../specs/README.md) que la capacidad
+        no está ya especificada. Una spec = una capacidad, implementable en un máximo aproximado de una
+        semana (`constitution.md` §3.6).
+
+  - type: input
+    id: capacidad
+    attributes:
+      label: Capacidad propuesta
+      description: Una sola frase, en términos de comportamiento observable.
+      placeholder: "Registrar un dispositivo push para el usuario autenticado"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema o necesidad
+      description: Qué falta hoy y a quién afecta. Sin soluciones técnicas todavía.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alcance
+    attributes:
+      label: Alcance
+      description: Qué incluye esta spec.
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: exclusiones
+    attributes:
+      label: Exclusiones
+      description: Qué NO incluye, para evitar que la spec crezca sin control.
+      placeholder: |
+        - ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Autenticación
+        - Comercios
+        - Plataforma
+        - Seguridad
+        - Observabilidad
+        - Moderación
+        - Multimedia
+        - Contenido
+        - Integraciones
+    validations:
+      required: true
+
+  - type: input
+    id: dependencias
+    attributes:
+      label: Dependencias
+      description: IDs de specs que deben existir antes (por ejemplo 009, 014).
+      placeholder: "Ninguna"
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación preliminares
+      description: Formato Dado/Cuando/Entonces. Deben ser observables y medibles.
+      placeholder: |
+        - Dado ... cuando ... entonces ...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmaciones
+    attributes:
+      label: Confirmaciones
+      options:
+        - label: La capacidad no está cubierta por una spec existente.
+          required: true
+        - label: No requiere bases de datos relacionales, nube distinta de AWS ni servicios fuera del Free Tier.
+          required: true
+        - label: No añade interfaz de usuario ni visión artificial local.
+          required: true
+        - label: Los criterios de aceptación son medibles, sin adjetivos sin métrica.
+          required: true

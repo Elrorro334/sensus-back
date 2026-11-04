@@ -29,8 +29,8 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Configuración de Autenticación con JWT Bearer y validación de SecurityStamp
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? new JwtSettings();
-var secretKey = Encoding.UTF8.GetBytes(string.IsNullOrEmpty(jwtSettings.Secret) 
-    ? "Sensus_Fallback_Key_For_Early_Initialization_Must_Be_At_Least_32_Chars!" 
+var secretKey = Encoding.UTF8.GetBytes(string.IsNullOrEmpty(jwtSettings.Secret)
+    ? "Sensus_Fallback_Key_For_Early_Initialization_Must_Be_At_Least_32_Chars!"
     : jwtSettings.Secret);
 
 builder.Services.AddAuthentication(options =>
@@ -207,7 +207,7 @@ app.MapUserEndpoints();
 app.MapComercioEndpoints();
 app.MapMerchantEndpoints();
 
-app.Run();
+await app.RunAsync();
 
 // Requerido para WebApplicationFactory en pruebas
 public partial class Program { }

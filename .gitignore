@@ -361,3 +361,19 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Sensus — secretos y artefactos locales
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+artifacts/
+coverage*.xml
+coverage*.json
+TestResults/
+Sensus.Api.http.user
+
+# AWS CDK
+infra/cdk.out/
+infra/bin/
+infra/obj/
+*.cdk.staging/

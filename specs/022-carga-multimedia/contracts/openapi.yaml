@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: "Sensus API — Spec 022 Carga de multimedia"
+  version: 1.0.0
+  description: "Borrador del contrato del spec 022. Completar esquemas antes de implementar."
+servers:
+  - url: https://localhost:5001
+paths:
+  /api/v1/media/upload:
+    post:
+      summary: "Borrador de POST /api/v1/media/upload"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: OK }
+        '400': { description: Solicitud inválida }
+        '401': { description: No autenticado }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

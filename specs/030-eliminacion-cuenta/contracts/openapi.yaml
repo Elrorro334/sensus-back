@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: "Sensus API — Spec 030 Eliminación de cuenta y datos"
+  version: 1.0.0
+  description: "Borrador del contrato del spec 030. Completar esquemas antes de implementar."
+servers:
+  - url: https://localhost:5001
+paths:
+  /api/v1/users/account:
+    delete:
+      summary: "Borrador de DELETE /api/v1/users/account"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '202': { description: Aceptado }
+        '400': { description: Solicitud inválida }
+        '401': { description: No autenticado }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
