@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar .NET
         uses: actions/setup-dotnet@v4
@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -104,7 +104,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Comprobar existencia de infraestructura
         id: check_infra
@@ -145,7 +145,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Toda carpeta de spec MUST tener los cuatro artefactos (constitution.md §3.6).
       - name: Verificar artefactos por spec
