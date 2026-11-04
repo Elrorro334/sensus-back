@@ -89,7 +89,7 @@ jobs:
       # Advertencia por diseño hasta completar rotación de secretos JWT (ver SECURITY.md y specs 001/002).
       - name: Escaneo de secretos
         continue-on-error: true
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
