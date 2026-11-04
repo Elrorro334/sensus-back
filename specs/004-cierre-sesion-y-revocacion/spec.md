@@ -4,7 +4,7 @@
 |---|---|
 | ID | 004 |
 | Slug | `cierre-sesion-y-revocacion` |
-| Estado | Pendiente |
+| Estado | Implementado |
 | Ola | 6 |
 | Tipo | Nuevo |
 | Dueño | Por asignar |

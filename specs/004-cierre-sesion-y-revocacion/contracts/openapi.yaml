@@ -2,17 +2,16 @@ openapi: 3.1.0
 info:
   title: "Sensus API — Spec 004 Cierre de sesión y revocación de token"
   version: 1.0.0
-  description: "Borrador del contrato del spec 004. Completar esquemas antes de implementar."
+  description: "Contrato del spec 004."
 servers:
   - url: https://localhost:5001
 paths:
   /api/v1/auth/logout:
     post:
-      summary: "Borrador de POST /api/v1/auth/logout"
+      summary: "Cierra la sesión activa revocando el token JWT actual de forma verificable e idempotente"
       security: [{ bearerAuth: [] }]
       responses:
         '204': { description: Sin contenido }
-        '400': { description: Solicitud inválida }
         '401': { description: No autenticado }
 components:
   securitySchemes:

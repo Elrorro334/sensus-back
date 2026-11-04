@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Sensus.Api.Extensions;
 using Sensus.Application.Users.Commands.CreateGuestSession;
 using Sensus.Application.Users.Commands.Login;
+using Sensus.Application.Users.Commands.Logout;
 using Sensus.Application.Users.Commands.RegisterUser;
 using Sensus.Application.Users.Commands.RequestPasswordReset;
 using Sensus.Application.Users.Commands.ResetPassword;
@@ -23,7 +24,7 @@ public static class AuthEndpoints
 
     private static void MapAuthGroup(RouteGroupBuilder group, bool isV1)
     {
-        group.WithTags("Autenticación (SE-001 / SE-002 / SE-005 / SE-008)");
+        group.WithTags("Autenticación (SE-001 / SE-002 / SE-004 / SE-005 / SE-008)");
 
         // SE-001: Registro de usuario
         var register = group.MapPost("/register", async (
@@ -66,6 +67,21 @@ public static class AuthEndpoints
         .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         if (isV1) login.WithName("LoginUser");
+
+        // SE-004: Cierre de sesión y revocación de token
+        var logout = group.MapPost("/logout", async (
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            var result = await sender.Send(new LogoutCommand(), ct);
+            return result.ToHttpResult();
+        })
+        .RequireAuthorization()
+        .WithSummary("SE-004: Cierra la sesión activa revocando el token JWT actual de forma verificable e idempotente")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        if (isV1) logout.WithName("LogoutUser");
 
         // SE-008: Modo Invitado (omite registro y otorga token de 2 km)
         var guest = group.MapPost("/guest", async (

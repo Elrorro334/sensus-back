@@ -84,4 +84,80 @@ public class SecurityPipelineTests : IClassFixture<CustomWebApplicationFactory>
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task LogoutEndpoint_ShouldReturnUnauthorized_WhenUnauthenticated()
+    {
+        // Act: POST /api/v1/auth/logout sin token
+        var response = await _client.PostAsync("/api/v1/auth/logout", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task LogoutEndpoint_ShouldReturnNoContent_AndInvalidateSubsequentRequests()
+    {
+        // Arrange
+        var user = User.Create(
+            "Active Logout User",
+            "active.logout@sensus.com",
+            "hashed-password",
+            true,
+            DateTime.UtcNow).Value;
+
+        _factory.UserRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>())
+            .Returns(user);
+
+        var tokenGenerator = _factory.Services.GetRequiredService<IJwtTokenGenerator>();
+        var (token, _) = tokenGenerator.GenerateToken(user);
+
+        // Act 1: POST /api/v1/auth/logout con token válido
+        using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var logoutResponse = await _client.SendAsync(logoutRequest);
+
+        // Assert 1: Responde 204 NoContent
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Act 2: Intento de usar el mismo token en otro endpoint protegido (CA-004-02)
+        using var meRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        meRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var meResponse = await _client.SendAsync(meRequest);
+
+        // Assert 2: El token revocado es rechazado de inmediato
+        meResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task LogoutEndpoint_ShouldBeIdempotent_WhenCalledMultipleTimes()
+    {
+        // Arrange
+        var user = User.Create(
+            "Idempotent Logout User",
+            "idempotent.logout@sensus.com",
+            "hashed-password",
+            true,
+            DateTime.UtcNow).Value;
+
+        _factory.UserRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>())
+            .Returns(user);
+
+        var tokenGenerator = _factory.Services.GetRequiredService<IJwtTokenGenerator>();
+        var (token, _) = tokenGenerator.GenerateToken(user);
+
+        // Act 1: Primer logout
+        using var request1 = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response1 = await _client.SendAsync(request1);
+        response1.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Act 2: Segundo logout consecutivo con el mismo token (CA-004-03)
+        using var request2 = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response2 = await _client.SendAsync(request2);
+
+        // Assert 2: Sigue respondiendo 204 sin error
+        response2.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
 }

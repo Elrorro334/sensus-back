@@ -91,7 +91,10 @@ builder.Services.AddAuthentication(options =>
             }
 
             var tokenSecurityStamp = userPrincipal.FindFirstValue(JwtTokenGenerator.SecurityStampClaimType);
-            if (tokenSecurityStamp is not null && !string.Equals(tokenSecurityStamp, user.SecurityStamp, StringComparison.Ordinal))
+            var path = context.HttpContext.Request.Path.Value ?? string.Empty;
+            var isLogoutPath = path.EndsWith("/auth/logout", StringComparison.OrdinalIgnoreCase);
+
+            if (!isLogoutPath && tokenSecurityStamp is not null && !string.Equals(tokenSecurityStamp, user.SecurityStamp, StringComparison.Ordinal))
             {
                 context.Fail("La sesión ha sido revocada o la contraseña fue restablecida.");
             }
