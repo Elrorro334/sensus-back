@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "Sprint1"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  CI: "true"
+
+jobs:
+  build-and-test:
+    name: Compilación, pruebas y cobertura
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restaurar
+        run: dotnet restore sensus-back.sln
+
+      - name: Compilar
+        run: dotnet build sensus-back.sln --configuration Release --no-restore
+
+      - name: Verificar formato
+        run: dotnet format sensus-back.sln --verify-no-changes --no-restore
+
+      - name: Pruebas unitarias y de arquitectura
+        run: >
+          dotnet test sensus-back.sln
+          --configuration Release
+          --no-build
+          --collect:"XPlat Code Coverage"
+          --results-directory ./artifacts/coverage
+          --logger "trx;LogFileName=results.trx"
+
+      - name: Umbral de cobertura (Domain y Application ≥ 80 %)
+        run: node .github/scripts/check-coverage.mjs artifacts/coverage 80 Sensus.Domain Sensus.Application
+
+      - name: Publicar resultados de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./artifacts/coverage
+          retention-days: 14
+
+  quality:
+    name: Seguridad de dependencias y secretos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Dependencias vulnerables
+        run: |
+          dotnet restore sensus-back.sln
+          dotnet list sensus-back.sln package --vulnerable --include-transitive
+
+      # Bloqueante por diseño. Fallará mientras siga versionado el secreto JWT de
+      # src/Sensus.Api/appsettings.json (ver SECURITY.md y specs 001/002).
+      - name: Escaneo de secretos
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+      - name: Test de arquitectura
+        run: dotnet test tests/Sensus.ArchitectureTests --configuration Release
+
+  iac:
+    name: Infraestructura como código
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ hashFiles('infra/cdk.json') != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Instalar AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: cdk synth
+        working-directory: infra
+        run: cdk synth --quiet
+
+      - name: cdk diff
+        if: github.event_name == 'pull_request'
+        working-directory: infra
+        run: cdk diff --fail
+        env:
+          AWS_REGION: us-east-1
+
+  sdd:
+    name: Trazabilidad SDD
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Toda carpeta de spec MUST tener los cuatro artefactos (constitution.md §3.6).
+      - name: Verificar artefactos por spec
+        run: node .github/scripts/check-specs.mjs specs

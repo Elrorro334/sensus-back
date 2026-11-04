@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: "Sensus API — Spec 032 Detalle de oferta y contador de vistas"
+  version: 1.0.0
+  description: "Borrador del contrato del spec 032. Completar esquemas antes de implementar."
+servers:
+  - url: https://localhost:5001
+paths:
+  /api/v1/offers/{id}:
+    get:
+      summary: "Borrador de GET /api/v1/offers/{id}"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '400': { description: Solicitud inválida }
+        '401': { description: No autenticado }
+        '404': { description: No encontrado }
+  /api/v1/offers/{id}/view:
+    post:
+      summary: "Borrador de POST /api/v1/offers/{id}/view"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Sin contenido }
+        '400': { description: Solicitud inválida }
+        '401': { description: No autenticado }
+        '404': { description: No encontrado }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

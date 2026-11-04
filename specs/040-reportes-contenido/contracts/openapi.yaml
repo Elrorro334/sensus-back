@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: "Sensus API — Spec 040 Reportes de contenido"
+  version: 1.0.0
+  description: "Borrador del contrato del spec 040. Completar esquemas antes de implementar."
+servers:
+  - url: https://localhost:5001
+paths:
+  /api/v1/reports:
+    post:
+      summary: "Borrador de POST /api/v1/reports"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: OK }
+        '400': { description: Solicitud inválida }
+        '401': { description: No autenticado }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

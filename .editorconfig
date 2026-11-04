@@ -1,0 +1,48 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.{cs,csx}]
+indent_size = 4
+
+[*.{md,yml,yaml,json}]
+indent_size = 2
+trim_trailing_whitespace = false
+
+[*.{csproj,props,targets,sln,slnx}]
+indent_size = 2
+
+# C# — reglas mínimas alineadas a AGENTS.md §7 y §15
+[*.cs]
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_new_line_before_open_brace = all
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_prefer_braces = when_multiline:silent
+dotnet_style_readonly_field = true:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+# async/await: evitar bloqueos en código asíncrono
+dotnet_diagnostic.CA1849.severity = warning
+
+# Nombres privados con guion bajo: recomendación, no bloqueante
+dotnet_diagnostic.IDE1006.severity = suggestion
+
+# async/await
+dotnet_diagnostic.CA2007.severity = none
+
+# Sin documentación XML obligatoria
+dotnet_diagnostic.CS1591.severity = none
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[docs/*.md]
+max_line_length = off

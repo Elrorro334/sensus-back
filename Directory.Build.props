@@ -1,0 +1,33 @@
+<Project>
+
+  <!--
+    Propiedades compartidas por todos los proyectos de la solución.
+    No dupliques estas propiedades en los .csproj: cualquier excepción debe justificarse en el PR.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <NoWarn>$(NoWarn);CA1014</NoWarn>
+  </PropertyGroup>
+
+  <!-- Los proyectos de prueba no se empaquetan. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) Or $(MSBuildProjectName.EndsWith('.UnitTests')) Or $(MSBuildProjectName.EndsWith('.IntegrationTests')) Or $(MSBuildProjectName.EndsWith('.ArchitectureTests'))">
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Los nombres de prueba con guiones bajos son convención de xUnit, no un defecto. -->
+    <NoWarn>$(NoWarn);CA1707;CA1515</NoWarn>
+  </PropertyGroup>
+
+  <!-- Calidad bloqueante en Release y en CI (Principio V de la constitución). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' Or '$(CI)' == 'true'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

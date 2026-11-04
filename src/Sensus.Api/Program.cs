@@ -141,7 +141,7 @@ app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapComercioEndpoints();
 
-app.Run();
+await app.RunAsync();
 
 // Requerido para WebApplicationFactory en pruebas
 public partial class Program { }
