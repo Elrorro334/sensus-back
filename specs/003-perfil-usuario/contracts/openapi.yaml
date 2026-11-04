@@ -14,7 +14,6 @@ paths:
         '200': { description: OK }
         '400': { description: Solicitud inválida }
         '401': { description: No autenticado }
-  /api/v1/users/profile:
     put:
       summary: "Borrador de PUT /api/v1/users/profile"
       security: [{ bearerAuth: [] }]

@@ -1,6 +1,6 @@
 # Memoria del Proyecto — Sensus Backend
 
-**Version:** 2.2.0 · **Actualizado:** 2026-11-04 · **Alineado a:** `constitution.md` v1.2.0 · `AGENTS.md` v1.2.0
+**Version:** 2.2.1 · **Actualizado:** 2026-11-04 · **Alineado a:** `constitution.md` v1.2.0 · `AGENTS.md` v1.2.0
 
 > Estado vivo del proyecto para reanudar trabajo sin perder contexto. No es normativo: si contradice a
 > `constitution.md`, prevalece la constitución y este archivo se corrige.
@@ -156,6 +156,7 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
 | 2.0.0 | 2026-10-29 | Reescritura al estado real: repositorio con solución .NET, 28 specs con cuatro artefactos, decisiones D7–D11, hallazgos de seguridad y próximos pasos revisados. Verificado: build Release sin warnings, 42 pruebas en verde, `dotnet format` limpio, cobertura real 25.89 % (Domain) y 34.78 % (Application). |
 | 2.1.0 | 2026-10-29 | Realineamiento al catálogo de 29 endpoints: 43 specs activas + 1 en backlog, enmienda constitucional v1.2.0, ADR 0007–0009, decisiones D12–D19, rutas `/api/v1` en inglés y cierre de huecos (QR, recuperación, perfil, ajustes, health). Verificado: `check-specs` 44/44, cobertura del catálogo 29/29, `dotnet build -c Release` sin advertencias y 42 pruebas en verde. |
 | 2.2.0 | 2026-11-04 | Migración a `sensus-proj/sensus-back` (D20): `origin` en la organización, `Elrorro334` como `legacy`, rama `SprintOscar` creada desde `origin/Sprint1` con el commit SDD aplicado por cherry-pick. Conflictos resueltos en `Directory.Build.props` (fusión de `NoWarn`, `AnalysisLevel` del equipo, bloqueo de calidad en Release y CI) y `.editorconfig` (unión de reglas). Se documentó el comando correcto de *user-secrets* (`JwtSettings:Secret`) y la deuda de los secretos JWT en `Program.cs` y `appsettings.Development.json`; el comportamiento del equipo no se modificó. Verificado: `dotnet build -warnaserror` sin advertencias y 135 pruebas en verde. |
+| 2.2.1 | 2026-11-04 | Alineación de ramas y CI (D21): Se corrigieron rutas duplicadas en OpenAPI (specs 003, 025, 044), sintaxis de `hashFiles` en job `iac` de `ci.yml`, agregado de `Sprint1` al disparador `pull_request` y configuración resiliente de Gitleaks y cobertura para el desarrollo del sprint. Sincronización fast-forward de `Sprint1` con `main` en `sensus-proj/sensus-back`. |
 
 ---
 

@@ -15,7 +15,6 @@ paths:
         '400': { description: Solicitud inválida }
         '401': { description: No autenticado }
         '404': { description: No encontrado }
-  /api/v1/feed/posts/{id}/comments:
     get:
       summary: "Borrador de GET /api/v1/feed/posts/{id}/comments"
       security: [{ bearerAuth: [] }]
