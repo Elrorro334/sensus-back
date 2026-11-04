@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configurar .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -77,7 +77,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configurar .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -118,7 +118,7 @@ jobs:
 
       - name: Configurar .NET
         if: steps.check_infra.outputs.exists == 'true'
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
