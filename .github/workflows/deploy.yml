@@ -1,0 +1,43 @@
+name: CD - Deploy to EC2
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Despliegue automático en EC2
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Ejecutar despliegue vía SSH en EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "1. Actualizando código desde origin/main..."
+            cd /home/ubuntu/sensus-back
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "2. Compilando y publicando Sensus.Api..."
+            export TMPDIR=/home/ubuntu/tmp
+            dotnet publish src/Sensus.Api/Sensus.Api.csproj -c Release -o /home/ubuntu/sensus-api
+
+            echo "3. Reiniciando servicio de backend..."
+            sudo systemctl restart sensus.service
+
+            echo "4. Verificando estado del servicio..."
+            sudo systemctl is-active sensus.service
+            
+            echo "5. Verificando endpoint local..."
+            curl -f http://127.0.0.1:5000/health
+            echo "¡Despliegue completado con éxito!"

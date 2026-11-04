@@ -1,6 +1,6 @@
 # Memoria del Proyecto — Sensus Backend
 
-**Version:** 2.3.0 · **Actualizado:** 2026-11-04 · **Alineado a:** `constitution.md` v1.2.0 · `AGENTS.md` v1.2.0
+**Version:** 2.4.0 · **Actualizado:** 2026-11-04 · **Alineado a:** `constitution.md` v1.2.0 · `AGENTS.md` v1.2.0
 
 > Estado vivo del proyecto para reanudar trabajo sin perder contexto. No es normativo: si contradice a
 > `constitution.md`, prevalece la constitución y este archivo se corrige.
@@ -47,6 +47,7 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
 | D2 | Stack fijado: .NET 10 LTS, C# 14, MongoDB 8.x | 2026-10-28 | Prohibido usar «última versión» como criterio |
 | D3 | Toolchain: xUnit, FluentAssertions, NSubstitute, Testcontainers, NetArchTest, AWS CDK en C#, GitHub Actions | 2026-10-28 | Pipeline y pruebas se construyen sobre estas herramientas |
 | D4 | Umbrales: cobertura ≥ 80 % en Domain/Application; paginación 20/100; p95 y moderación como `NFR` | 2026-10-28 | Los umbrales se fijan en la spec, no en código |
+| D22 | Despliegue en EC2 con Nginx, Let's Encrypt SSL (`18-117-247-171.sslip.io`) y CD en GitHub Actions | 2026-11-04 | Despliegue productivo y accesible sin tocar DNS de dominios privados (`rodnix`), 100 % automatizado vía `.github/workflows/deploy.yml` y con certificados TLS gratuitos auto-renovables |
 | D5 | Documentos de gobierno (`constitution.md`, `AGENTS.md`, `memory.md`) viven en la raíz del repositorio | 2026-10-29 | Se movieron desde el directorio de trabajo original; no hay copias duplicadas |
 | D6 | Documentación en español; código e identificadores en inglés | 2026-10-28 | Aplica a specs, ADR, commits y comentarios |
 | D7 | Cada spec tiene ID numérico de tres dígitos, carpeta `NNN-slug` y cuatro artefactos obligatorios: `spec.md`, `plan.md`, `tasks.md`, `checklist.md` | 2026-10-29 | Sin los cuatro artefactos la spec está incompleta y no se implementa |
@@ -157,6 +158,7 @@ Estados posibles: **Sin implementar** · **Parcial** · **Implementado** · **Ve
 | 2.1.0 | 2026-10-29 | Realineamiento al catálogo de 29 endpoints: 43 specs activas + 1 en backlog, enmienda constitucional v1.2.0, ADR 0007–0009, decisiones D12–D19, rutas `/api/v1` en inglés y cierre de huecos (QR, recuperación, perfil, ajustes, health). Verificado: `check-specs` 44/44, cobertura del catálogo 29/29, `dotnet build -c Release` sin advertencias y 42 pruebas en verde. |
 | 2.2.0 | 2026-11-04 | Migración a `sensus-proj/sensus-back` (D20): `origin` en la organización, `Elrorro334` como `legacy`, rama `SprintOscar` creada desde `origin/Sprint1` con el commit SDD aplicado por cherry-pick. Conflictos resueltos en `Directory.Build.props` (fusión de `NoWarn`, `AnalysisLevel` del equipo, bloqueo de calidad en Release y CI) y `.editorconfig` (unión de reglas). Se documentó el comando correcto de *user-secrets* (`JwtSettings:Secret`) y la deuda de los secretos JWT en `Program.cs` y `appsettings.Development.json`; el comportamiento del equipo no se modificó. Verificado: `dotnet build -warnaserror` sin advertencias y 135 pruebas en verde. |
 | 2.2.1 | 2026-11-04 | Alineación de ramas y CI (D21): Se corrigieron rutas duplicadas en OpenAPI (specs 003, 025, 044), sintaxis de `hashFiles` en job `iac` de `ci.yml`, agregado de `Sprint1` al disparador `pull_request` y configuración resiliente de Gitleaks y cobertura para el desarrollo del sprint. Sincronización fast-forward de `Sprint1` con `main` en `sensus-proj/sensus-back`. |
+| 2.4.0 | 2026-11-04 | Despliegue EC2, Certificado SSL (HTTPS) y CI/CD (D22): Publicación en AWS EC2 (Ubuntu 24.04, .NET 10 SDK), Nginx reverse proxy con certificado SSL oficial Let's Encrypt para `18-117-247-171.sslip.io`, actualización de `DEFAULT_BASE_URL` en app móvil y creación de `.github/workflows/deploy.yml` para despliegue continuo automático por SSH. |
 | 2.3.0 | 2026-11-04 | Implementación de Spec 004 (Cierre de sesión y revocación de token): Se creó `LogoutCommand`, `LogoutCommandHandler`, endpoint `POST /api/v1/auth/logout` (y alias `/api/auth/logout`), soporte idempotente en `OnTokenValidated` de JWT y rotación de `SecurityStamp`. Verificado con 100 pruebas unitarias y 34 de integración en verde (141 pruebas totales en la solución). |
 
 ---
